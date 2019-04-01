@@ -1,6 +1,6 @@
 # PassPredict
 
-Intelligent twitter bot to track and identify satellites that are passing overhead.
+Intelligent twitter bot to track and identify satellites that are passing overhead. Follow it on twitter at [@passpredict](http://twitter.com/passpredict)
 
 ## Installation and dependencies
 PassPredict requires the following libraries:
