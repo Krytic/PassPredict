@@ -9,10 +9,11 @@ PassPredict requires the following libraries:
 - [Python-Twitter](https://github.com/bear/python-twitter)
 
 To install, download a fork into your folder. Create a file called `config.txt` with the following contents:
-    consumer_key=<CONSUMER KEY>
-    consumer_secret=<CONSUMER SECRET>
+
+    consumer_key=<CONSUMER_KEY>
+    consumer_secret=<CONSUMER_SECRET>
     access_token_key=<TOKEN>
-    access_token_secret=<SECRET KEY>
+    access_token_secret=<SECRET_KEY>
 
 To run, invoke it from the command line:
 
