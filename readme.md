@@ -16,7 +16,7 @@ To install, download a fork into your folder. Create a file called `config.txt` 
 
 To run, invoke it from the command line:
 
-    python TestTweet.py
+    python PassPredict.py
 
 PassPredict will test your credentials and refuse to run if they are correct. By default PassPredict runs every 60 seconds (customisable) and detects passes close to [The University of Auckland](http://auckland.ac.nz) (also customisable).
 

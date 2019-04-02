@@ -60,7 +60,7 @@ def check():
             
             plt.clf()
             
-            map = Basemap(projection="kav7", lon_0=-174.7684, resolution='l')
+            map = Basemap(projection="ortho", lat_0=-36.852670, lon_0=-174.7684, resolution='l')
         
             # draw lat/lon grid lines every 30 degrees.
             map.drawmeridians(np.arange(0,360,30))
@@ -110,6 +110,11 @@ def main():
         s.run()
     except KeyboardInterrupt:
         print("Manual interrupt by user")
+        return 10
+    except:
+        now = datetime.datetime.now()
+        now = now.strftime("%d/%m/%Y %H:%M:%S")
+        print("General Exception occured at {}".format(time.now()))
         return 10
 
     return 0
