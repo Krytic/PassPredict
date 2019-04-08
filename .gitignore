@@ -1,3 +1,11 @@
+# Pass-Predict Specific
+config.txt
+*.dat
+*.data
+*.preds
+*.bsp
+active.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -102,6 +110,3 @@ venv.bak/
 
 # mypy
 .mypy_cache/
-
-#custom
-config.txt

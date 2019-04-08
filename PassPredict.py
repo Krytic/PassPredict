@@ -5,6 +5,9 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import sched, time
+from pytz import timezone
+
+local_time = timezone('Pacific/Auckland')
 
 cfg = dict()
 
@@ -26,6 +29,9 @@ tweeted = []
 
 min_range = 15
 
+auckland_lat = -36.852664
+auckland_long = 174.768017
+
 def check():
     for i in range(len(sats)):
         now = datetime.datetime.utcnow()
@@ -38,9 +44,9 @@ def check():
         ts = load.timescale()
         t = ts.utc(mtime.replace(tzinfo=utc))
         
-        mins = np.arange(1, min_range+30)
+        secs = np.arange(1, 60*(min_range+15))
         
-        trange = ts.utc(now.year, now.month, now.day, now.hour, mins, now.second)
+        trange = ts.utc(now.year, now.month, now.day, now.hour, now.minute, now.second+secs)
         
         
         stations_url = 'http://celestrak.com/NORAD/elements/active.txt'
@@ -54,10 +60,18 @@ def check():
         
         alt, az, distance = topocentric.altaz()
     
-        if alt.degrees > 0 and sat not in tweeted:
-    
-            path = satellite.at(trange).subpoint()
-            
+        if alt.degrees >= 0 and sat not in tweeted:
+            el = (0, '')
+            for tp in trange:
+                diff = satellite - auckland
+                diff = diff.at(tp)
+                elv = float(diff.altaz()[0].degrees)
+                if elv > el[0]:
+                    el = (elv, tp.astimezone(local_time).strftime("%I:%M:%S %p"))
+                    
+            pos = satellite.at(trange)
+            path = pos.subpoint()
+
             plt.clf()
             
             map = Basemap(projection="ortho", lat_0=-36.852670, lon_0=-174.7684, resolution='l')
@@ -69,7 +83,7 @@ def check():
             map.drawcoastlines()
             map.fillcontinents(color='darkgreen', lake_color='navy')
             
-            print(sat)
+            print("Tweeted about {}".format(sat))
             
             lon = path.longitude.degrees
             lat = path.latitude.degrees
@@ -81,7 +95,7 @@ def check():
             
             plt.close()
             
-            tweet = "In {} minutes, {} will be over UoA!".format(min_range, sat)
+            tweet = "In {} minutes, {} will be over UoA! Maximum elevation is {:.2f}° at {}.".format(min_range, sat, *el)
             image = open('figs/{}.png'.format(sat), 'rb')
             
             api.PostUpdate(tweet, media=image)
