@@ -11,20 +11,31 @@ PassPredict requires the following libraries:
 - oauth2client
 - pytz
 
-To install, download a fork into your folder. Create a file called `config.txt` with the following contents:
+To install, download a fork into your folder. Create a file called `config.txt` with the following contents. You may use # at the BEGINNING of a line as a comment, and empty lines are ignored.
 
-    consumer_key=<CONSUMER_KEY>
-    consumer_secret=<CONSUMER_SECRET>
-    access_token_key=<TOKEN>
-    access_token_secret=<SECRET_KEY>
+    tw:consumer_key=<CONSUMER_KEY>
+    tw:consumer_secret=<CONSUMER_SECRET>
+    tw:access_token_key=<TOKEN>
+    tw:access_token_secret=<SECRET_KEY>
 
-You will also need a `client_secret.json` file from the Google APIs spreadsheet. Contact the maintainer to have the necessary sheet shared to your API account. (In the full release this will be modified to allow arbitrary sheets following certain design paradigms)
+You will also need a `client_secret.json` file from the Google APIs spreadsheet. Any sheet is permissable via the following settings in `config.txt`:
+
+    sheet_id=<SHEET_ID>
+    sheet_name=<SHEET_NAME>
+    
+You must configure your ground station also (PassPredict assumes +/+ lat/long for N/E, and -/- for S/W):
+
+    gs_lat=<LATITUDE>
+    gs_long=<LONGITUDE>
+    gs_tz=<TIMEZONE_STRING>
 
 To run, invoke it from the command line:
 
-    python PassPredict.py
+    python PassPredict.py [mode] [silent]
+    
+Where `mode` is either `dynamic` (loads from google sheet) or `normal` (loads from file), and `silent` is either `silent` (does not tweet) or `speak` (tweets). If you wish to specify one option, you must specify both.
 
-PassPredict will test your credentials and refuse to run if they are correct. By default PassPredict runs every 60 seconds (customisable) and detects passes close to [The University of Auckland](http://auckland.ac.nz) (also customisable).
+PassPredict will test your credentials and refuse to run if they are correct. By default PassPredict runs every 60 seconds (customisable, although is hardcoded in).
 
 ## Branch Policy
 Master is considered to be bleeding-edge. Releases are tagged, please make changes on different branches and we will merge them to master as required.

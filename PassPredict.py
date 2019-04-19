@@ -28,7 +28,7 @@ twcfg = dict()
 with open('config.txt', 'r') as f:
     lines = f.readlines()
     for line in lines:
-        if line[0] == "#":
+        if line[0] == "#" or line.strip() == "":
             continue
         bits = line.split('=')
         if bits[0][:3] == "tw:":
@@ -109,7 +109,7 @@ def check():
 
             plt.clf()
             
-            map = Basemap(projection="ortho", lat_0=-36.852670, lon_0=-174.7684, resolution='l')
+            map = Basemap(projection="ortho", lat_0=cfg['gs_lat'], lon_0=cfg['gs_long'], resolution='l')
         
             # draw lat/lon grid lines every 30 degrees.
             map.drawmeridians(np.arange(0,360,30))
