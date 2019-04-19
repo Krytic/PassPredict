@@ -1,13 +1,10 @@
 from mpl_toolkits.basemap import Basemap
-import twitter
 from skyfield.api import Topos, load, utc
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 import sched, time
 from pytz import timezone
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import sys
 import utils
 
@@ -18,20 +15,16 @@ if len(sys.argv) > 1:
     mode = sys.argv[1] if sys.argv[1] == "dynamic" else "normal"
     silent = True if sys.argv[2] == "silent" else False
 
-scope = ['https://spreadsheets.google.com/feeds',
-         'https://www.googleapis.com/auth/drive'] # API recently changed, not sure which scope is required
-creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
-client = gspread.authorize(creds)
-
 cfg = utils.load_config()
 
-api = twitter.Api(**cfg['twitter'])
-ws = client.open_by_key(cfg['sheet_id']).worksheet(cfg['sheet_name'])
+try:
+    api = utils.connect_twitter()
+    ws = utils.connect_sheets()
+except utils.ValidationError as e:
+    print(e)
+    sys.exit(1)
 
 local_time = timezone(cfg['gs_tz'])
-
-if not api.VerifyCredentials():
-    raise ValueError('Incorrect twitter credentials!')
 
 if mode == 'normal':
     with open('tracking.txt', 'r') as f:
