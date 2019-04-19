@@ -8,47 +8,31 @@ from pytz import timezone
 import sys
 import utils
 
-mode = "normal"
-silent = False
-
-if len(sys.argv) > 1:
-    mode = sys.argv[1] if sys.argv[1] == "dynamic" else "normal"
-    silent = True if sys.argv[2] == "silent" else False
-
-cfg = utils.load_config()
-
 try:
-    api = utils.connect_twitter()
-    ws = utils.connect_sheets()
+    cfg = utils.load_config()
+    api = utils.twitter_api()
+    ws = utils.worksheet()
+    
+    sats = utils.fetch_tracked_satellites()
+    
+    local_time = timezone(cfg['gs_tz'])
 except utils.ValidationError as e:
     print(e)
     sys.exit(1)
 
-local_time = timezone(cfg['gs_tz'])
-
-if mode == 'normal':
-    with open('tracking.txt', 'r') as f:
-        sats = f.readlines()
-elif mode == 'dynamic':
-    sats = ws.col_values(1)[1:] # header
-
 tweeted = []
-
-min_range = 15
 
 def check():
     for i in range(len(sats)):
         now = datetime.datetime.utcnow()
-        mtime = now + datetime.timedelta(minutes=min_range)
+        mtime = now + datetime.timedelta(minutes=cfg['minutes_to_predict'])
         
-        sats[i] = sats[i].strip().upper()
-        
-        sat = sats[i]
+        sat = sats[i].strip().upper()
         
         ts = load.timescale()
         t = ts.utc(mtime.replace(tzinfo=utc))
         
-        secs = np.arange(1, 60*(min_range+15))
+        secs = np.arange(1, 60*(cfg['minutes_to_predict']+15))
         
         trange = ts.utc(now.year, now.month, now.day, now.hour, now.minute, now.second+secs)
         
@@ -100,8 +84,6 @@ def check():
             map.drawcoastlines()
             map.fillcontinents(color='darkgreen', lake_color='navy')
             
-            print("Tweeted about {}".format(sat))
-            
             lon = path.longitude.degrees
             lat = path.latitude.degrees
             
@@ -112,11 +94,13 @@ def check():
             
             plt.close()
             
-            tweet = "In {} minutes, {} will be over UoA! Maximum elevation is {:.2f}° at {}.".format(min_range, sat, *el)
+            tweet = cfg['tweet'].format(cfg['minutes_to_predict'], sat, *el)
             image = open('figs/{}.png'.format(sat), 'rb')
             
-            if not silent:
+            if not cfg['silent']:
                 api.PostUpdate(tweet, media=image)
+                
+            print("Tweeted about {}".format(sat))
             
             tweeted.append(sat)
 
@@ -133,7 +117,7 @@ def main():
         try:
             iterations += 1
             check()
-            if iterations == min_range + 1:
+            if iterations == cfg['minutes_to_predict'] + 1:
                 iterations = 0
                 tweeted = []
                 reload = True
@@ -141,6 +125,7 @@ def main():
             s.enter(60, 1, run_task)
     
     run_task()
+    
     try:
         s.run()
     except KeyboardInterrupt:
