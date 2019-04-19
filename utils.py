@@ -3,7 +3,11 @@ import twitter
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from gspread.exceptions import WorksheetNotFound
+from pytz import timezone
 
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap
 
 class ValidationError(Exception):
     pass
@@ -24,6 +28,7 @@ def memoize(func):
 @memoize
 def load_config():
     cfg = dict()
+    cfg['twitter'] = dict()
 
     with open('config.txt', 'r') as f:
         lines = f.readlines()
@@ -92,9 +97,64 @@ def worksheet():
     return ws
 
 
-def construct_image():
-    pass
+def construct_image(sat, path, trange, gs, sat_name, trange_plot):
+    cfg = load_config()
+    ax = plt.subplot(121)
+    
+    az, el = compute_azel(sat, gs, trange)
+    
+    ax2 = ax.twinx()
+    plt.ylim(0, 90)
+    ax.plot(trange_plot, el, 'b-')
+    ax2.plot(trange_plot, az, 'r-')
+    ax.set_ylim(0, 90)
+    ax2.set_ylim(0, 360)
+    frame1 = plt.gca()
+    frame1.axes.get_xaxis().set_ticks([])
+    
+    plt.xlabel("Time")
+    ax.set_ylabel("Elevation")
+    ax2.set_ylabel("Azimuth")
+    
+    plt.subplot(122)
+    map = Basemap(projection="ortho", lat_0=cfg['gs_lat'], lon_0=cfg['gs_long'], resolution='l')
+    
+    # draw lat/lon grid lines every 30 degrees.
+    map.drawmeridians(np.arange(0,360,30))
+    map.drawparallels(np.arange(-90,90,30))
+    map.drawmapboundary(fill_color="navy")
+    map.drawcoastlines()
+    map.fillcontinents(color='darkgreen', lake_color='navy')
+    lon = path.longitude.degrees
+    lat = path.latitude.degrees
+    
+    map.plot(lon,lat,zorder=100,latlon=True,marker='x',color='y',markersize=2)
 
+    plt.suptitle("{} Pass Data".format(sat_name))
+    
+    return plt
 
-def compute_maximum_elevation():
-    pass
+def compute_azel(satellite, ground_station, trange):
+    azimuth, elevation = [], []
+    for tp in trange:
+        diff = satellite - ground_station
+        diff = diff.at(tp)
+        altaz = diff.altaz()
+        elevation.append(altaz[0].degrees)
+        azimuth.append(altaz[1].degrees)
+    
+    return azimuth, elevation
+
+def compute_maximum_elevation(satellite, ground_station, trange):
+    cfg = load_config()
+
+    local_time = timezone(cfg['gs_tz'])
+    maximum_elevation = (0, '')
+    for tp in trange:
+        diff = satellite - ground_station
+        diff = diff.at(tp)
+        elv = float(diff.altaz()[0].degrees)
+        if elv > maximum_elevation[0]:
+            maximum_elevation = (elv, tp.astimezone(local_time).strftime("%I:%M:%S %p"))
+
+    return maximum_elevation
