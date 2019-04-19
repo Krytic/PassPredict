@@ -6,31 +6,53 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sched, time
 from pytz import timezone
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+import sys
 
-local_time = timezone('Pacific/Auckland')
+mode = "normal"
+silent = False
+
+if len(sys.argv) > 1:
+    mode = sys.argv[1] if sys.argv[1] == "dynamic" else "normal"
+    silent = True if sys.argv[2] == "silent" else False
+
+scope = ['https://spreadsheets.google.com/feeds',
+         'https://www.googleapis.com/auth/drive'] # API recently changed, not sure which scope is required
+creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+client = gspread.authorize(creds)
 
 cfg = dict()
+twcfg = dict()
 
 with open('config.txt', 'r') as f:
     lines = f.readlines()
     for line in lines:
+        if line[0] == "#":
+            continue
         bits = line.split('=')
-        cfg[bits[0]] = bits[1].strip()
+        if bits[0][:3] == "tw:":
+            twcfg[bits[0][3:]] = bits[1].strip()
+        else:
+            cfg[bits[0]] = bits[1].strip()
 
-api = twitter.Api(**cfg)
+api = twitter.Api(**twcfg)
+ws = client.open_by_key(cfg['sheet_id']).worksheet(cfg['sheet_name'])
+
+local_time = timezone(cfg['gs_tz'])
 
 if not api.VerifyCredentials():
     raise ValueError('Incorrect twitter credentials!')
 
-with open('tracking.txt', 'r') as f:
-    sats = f.readlines()
+if mode == 'normal':
+    with open('tracking.txt', 'r') as f:
+        sats = f.readlines()
+elif mode == 'dynamic':
+    sats = ws.col_values(1)[1:] # header
 
 tweeted = []
 
 min_range = 15
-
-auckland_lat = -36.852664
-auckland_long = 174.768017
 
 def check():
     for i in range(len(sats)):
@@ -50,11 +72,24 @@ def check():
         
         
         stations_url = 'http://celestrak.com/NORAD/elements/active.txt'
-        satellites = load.tle(stations_url)
+        satellites = load.tle(stations_url, reload=reload)
+        
+        if reload:
+            reload = False
+        
+        if sat not in satellites:
+            continue
+        
         satellite = satellites[sat]
         
-        auckland = Topos('36.852664 S', '174.768017 E')
-        difference = satellite - auckland
+        latitude = np.abs(float(cfg['gs_lat']))
+        latitude = str(latitude) + 'N' if cfg['gs_lat'] > 0 else 'S'
+        
+        longitude = np.abs(float(cfg['gs_long']))
+        longitude = str(longitude) + ' E' if cfg['gs_long'] > 0 else ' W'
+        
+        ground_station = Topos(latitude, longitude)
+        difference = satellite - ground_station
         
         topocentric = difference.at(t)
         
@@ -63,7 +98,7 @@ def check():
         if alt.degrees >= 0 and sat not in tweeted:
             el = (0, '')
             for tp in trange:
-                diff = satellite - auckland
+                diff = satellite - ground_station
                 diff = diff.at(tp)
                 elv = float(diff.altaz()[0].degrees)
                 if elv > el[0]:
@@ -98,7 +133,8 @@ def check():
             tweet = "In {} minutes, {} will be over UoA! Maximum elevation is {:.2f}° at {}.".format(min_range, sat, *el)
             image = open('figs/{}.png'.format(sat), 'rb')
             
-            api.PostUpdate(tweet, media=image)
+            if not silent:
+                api.PostUpdate(tweet, media=image)
             
             tweeted.append(sat)
 
@@ -106,16 +142,19 @@ def main():
     s = sched.scheduler(time.time)
     
     iterations = 0
+    reload = True
     
     def run_task():
         nonlocal iterations
-        global tweeted
+        global tweeted, reload
+        
         try:
             iterations += 1
             check()
             if iterations == min_range + 1:
                 iterations = 0
                 tweeted = []
+                reload = True
         finally:
             s.enter(60, 1, run_task)
     

@@ -7,6 +7,9 @@ PassPredict requires the following libraries:
 - Anaconda (Numpy, Matplotlib + Basemap, Scipy)
 - [Skyfield](https://rhodesmill.org/skyfield)
 - [Python-Twitter](https://github.com/bear/python-twitter)
+- gspread
+- oauth2client
+- pytz
 
 To install, download a fork into your folder. Create a file called `config.txt` with the following contents:
 
@@ -14,6 +17,8 @@ To install, download a fork into your folder. Create a file called `config.txt` 
     consumer_secret=<CONSUMER_SECRET>
     access_token_key=<TOKEN>
     access_token_secret=<SECRET_KEY>
+
+You will also need a `client_secret.json` file from the Google APIs spreadsheet. Contact the maintainer to have the necessary sheet shared to your API account. (In the full release this will be modified to allow arbitrary sheets following certain design paradigms)
 
 To run, invoke it from the command line:
 
