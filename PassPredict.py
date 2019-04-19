@@ -9,6 +9,7 @@ from pytz import timezone
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import sys
+import utils
 
 mode = "normal"
 silent = False
@@ -22,21 +23,9 @@ scope = ['https://spreadsheets.google.com/feeds',
 creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
 client = gspread.authorize(creds)
 
-cfg = dict()
-twcfg = dict()
+cfg = utils.load_config()
 
-with open('config.txt', 'r') as f:
-    lines = f.readlines()
-    for line in lines:
-        if line[0] == "#" or line.strip() == "":
-            continue
-        bits = line.split('=')
-        if bits[0][:3] == "tw:":
-            twcfg[bits[0][3:]] = bits[1].strip()
-        else:
-            cfg[bits[0]] = bits[1].strip()
-
-api = twitter.Api(**twcfg)
+api = twitter.Api(**cfg['twitter'])
 ws = client.open_by_key(cfg['sheet_id']).worksheet(cfg['sheet_name'])
 
 local_time = timezone(cfg['gs_tz'])
