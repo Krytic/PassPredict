@@ -97,20 +97,19 @@ def worksheet():
     return ws
 
 
-def construct_image(sat, path, trange, gs, sat_name, trange_plot):
+def construct_image(sat, path, gs, sat_name, times):
     cfg = load_config()
     ax = plt.subplot(121)
     
-    az, el = compute_azel(sat, gs, trange)
+    az, el = compute_azel(sat, gs, times)
+    local_time = timezone(cfg['gs_tz'])
     
     ax2 = ax.twinx()
     plt.ylim(0, 90)
-    ax.plot(trange_plot, el, 'b-')
-    ax2.plot(trange_plot, az, 'r-')
+    ax.plot([str(t.astimezone(local_time).time())[0:5] for t in times], el, 'b-')
+    ax2.plot([str(t.astimezone(local_time).time())[0:5] for t in times], az, 'r-')
     ax.set_ylim(0, 90)
     ax2.set_ylim(0, 360)
-    frame1 = plt.gca()
-    frame1.axes.get_xaxis().set_ticks([])
     
     plt.xlabel("Time")
     ax.set_ylabel("Elevation")

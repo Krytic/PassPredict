@@ -1,7 +1,6 @@
 from skyfield.api import Topos, load, utc
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt
 import sched, time
 import sys
 import utils
@@ -11,8 +10,6 @@ try:
     api = utils.twitter_api()
     ws = utils.worksheet()
     
-    sats = utils.fetch_tracked_satellites()
-    
 except utils.ValidationError as e:
     print(e)
     sys.exit(1)
@@ -20,19 +17,24 @@ except utils.ValidationError as e:
 tweeted = []
 
 def check(should_reload):
+    if should_reload:
+        sats = utils.fetch_tracked_satellites()
     for i in range(len(sats)):
+        ts = load.timescale()
         now = datetime.datetime.utcnow()
         mtime = now + datetime.timedelta(minutes=int(cfg['minutes_to_predict']))
         
-        sat = sats[i].strip().upper()
+        times = []
+        for s in range(0, 60*int(cfg['minutes_to_predict'])):
+            dtime = now + datetime.timedelta(seconds=int(s))
+            times.append(ts.utc(dtime.replace(tzinfo=utc)))
         
-        ts = load.timescale()
+        sat = sats[i].strip().upper()
         t = ts.utc(mtime.replace(tzinfo=utc))
         
         secs = np.arange(1, 60*(int(cfg['minutes_to_predict'])+15))
         
         trange = ts.utc(now.year, now.month, now.day, now.hour, now.minute, now.second+secs)
-        trange_dupe = [datetime.datetime(now.year, now.month, now.day, now.hour, now.minute, now.second+sec) for sec in secs]
         
         stations_url = 'http://celestrak.com/NORAD/elements/active.txt'
         satellites = load.tle(stations_url, reload=should_reload)
@@ -58,13 +60,13 @@ def check(should_reload):
         
         alt, az, distance = topocentric.altaz()
     
-        if alt.degrees >= 0 and sat not in tweeted:
+        if alt.degrees >= int(cfg['elevation_threshold']) and sat not in tweeted:
             el = utils.compute_maximum_elevation(satellite, ground_station, trange)
 
             pos = satellite.at(trange)
             path = pos.subpoint()
 
-            plot = utils.construct_image(satellite, path, trange, ground_station, sat, trange_dupe)
+            plot = utils.construct_image(satellite, path, ground_station, sat, times)
             plot.savefig('figs/{}.png'.format(sat))
             
             plot.show()
@@ -83,7 +85,7 @@ def main():
     s = sched.scheduler(time.time)
     
     iterations = 0
-    should_reload = False
+    should_reload = True
     
     def run_task(should_reload):
         nonlocal iterations
