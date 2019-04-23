@@ -17,8 +17,7 @@ except utils.ValidationError as e:
 tweeted = []
 
 def check(should_reload):
-    if should_reload:
-        sats = utils.fetch_tracked_satellites()
+    sats = utils.fetch_tracked_satellites()
         
     stations_url = 'http://celestrak.com/NORAD/elements/{}'.format(cfg['celestrak_file'])
     satellites = load.tle(stations_url, reload=should_reload)
