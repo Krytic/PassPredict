@@ -19,6 +19,7 @@ tweeted = []
 def check(should_reload):
     if should_reload:
         sats = utils.fetch_tracked_satellites()
+
     for i in range(len(sats)):
         ts = load.timescale()
         now = datetime.datetime.utcnow()
@@ -36,7 +37,7 @@ def check(should_reload):
         
         trange = ts.utc(now.year, now.month, now.day, now.hour, now.minute, now.second+secs)
         
-        stations_url = 'http://celestrak.com/NORAD/elements/active.txt'
+        stations_url = 'http://celestrak.com/NORAD/elements/{}'.format(cfg['celestrak_file'])
         satellites = load.tle(stations_url, reload=should_reload)
         
         if should_reload:
@@ -47,11 +48,8 @@ def check(should_reload):
         
         satellite = satellites[sat]
         
-        latitude = np.abs(float(cfg['gs_lat']))
-        latitude = str(latitude) + ' N' if float(cfg['gs_lat']) > 0 else str(latitude) + ' S'
-        
-        longitude = np.abs(float(cfg['gs_long']))
-        longitude = str(longitude) + ' E' if float(cfg['gs_long']) > 0 else str(longitude) + ' W'
+        latitude = utils.format_on_sign(cfg['gs_lat'], 'N', 'S')
+        longitude = utils.format_on_sign(cfg['gs_long'], 'E', 'W')
         
         ground_station = Topos(latitude, longitude)
         difference = satellite - ground_station
@@ -76,8 +74,9 @@ def check(should_reload):
             
             if not cfg['silent']:
                 api.PostUpdate(tweet, media=image)
-                
-            print("Tweeted about {}".format(sat))
+                print("Tweeted about {}".format(sat))
+            else:
+                print(tweet)
             
             tweeted.append(sat)
 

@@ -49,6 +49,11 @@ def load_config():
 
     return cfg
 
+def format_on_sign(value, value_if_positive, value_if_negative):
+    value = float(value)
+    return str(np.abs(value)) + ' {}'.format(value_if_positive) if value > 0 else str(np.abs(value)) + ' {}'.format(value_if_negative)
+    
+
 
 def fetch_tracked_satellites():
     cfg = load_config()
@@ -116,7 +121,10 @@ def construct_image(sat, path, gs, sat_name, times):
     ax2.set_ylabel("Azimuth")
     
     plt.subplot(122)
-    map = Basemap(projection="ortho", lat_0=cfg['gs_lat'], lon_0=cfg['gs_long'], resolution='l')
+    map = Basemap(projection="ortho",
+                  lat_0=cfg['gs_lat'],
+                  lon_0=cfg['gs_long'],
+                  resolution='l')
     
     # draw lat/lon grid lines every 30 degrees.
     map.drawmeridians(np.arange(0,360,30))
@@ -127,7 +135,13 @@ def construct_image(sat, path, gs, sat_name, times):
     lon = path.longitude.degrees
     lat = path.latitude.degrees
     
-    map.plot(lon,lat,zorder=100,latlon=True,marker='x',color='y',markersize=2)
+    map.plot(lon,
+             lat,
+             zorder=100,
+             latlon=True,
+             marker='x',
+             color='y',
+             markersize=2)
 
     plt.suptitle("{} Pass Data".format(sat_name))
     
@@ -154,6 +168,7 @@ def compute_maximum_elevation(satellite, ground_station, trange):
         diff = diff.at(tp)
         elv = float(diff.altaz()[0].degrees)
         if elv > maximum_elevation[0]:
-            maximum_elevation = (elv, tp.astimezone(local_time).strftime("%I:%M:%S %p"))
+            maximum_elevation = (elv,
+                                 tp.astimezone(local_time).strftime("%I:%M:%S %p"))
 
     return maximum_elevation
