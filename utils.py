@@ -106,6 +106,11 @@ def construct_image(sat, path, gs, sat_name, times):
     cfg = load_config()
     ax = plt.subplot(121)
     
+    n = 5
+    for index, label in enumerate(ax.xaxis.get_ticklabels()):
+        if index % n != 0:
+            label.set_visible(False)
+    
     az, el = compute_azel(sat, gs, times)
     local_time = timezone(cfg['gs_tz'])
     
@@ -113,6 +118,7 @@ def construct_image(sat, path, gs, sat_name, times):
     plt.ylim(0, 90)
     ax.plot([str(t.astimezone(local_time).time())[0:5] for t in times], el, 'b-')
     ax2.plot([str(t.astimezone(local_time).time())[0:5] for t in times], az, 'r-')
+    
     ax.set_ylim(0, 90)
     ax2.set_ylim(0, 360)
     

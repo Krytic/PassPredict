@@ -19,6 +19,12 @@ tweeted = []
 def check(should_reload):
     if should_reload:
         sats = utils.fetch_tracked_satellites()
+        
+    stations_url = 'http://celestrak.com/NORAD/elements/{}'.format(cfg['celestrak_file'])
+    satellites = load.tle(stations_url, reload=should_reload)
+        
+    if should_reload:
+        should_reload = False
 
     for i in range(len(sats)):
         ts = load.timescale()
@@ -36,12 +42,6 @@ def check(should_reload):
         secs = np.arange(1, 60*(int(cfg['minutes_to_predict'])+15))
         
         trange = ts.utc(now.year, now.month, now.day, now.hour, now.minute, now.second+secs)
-        
-        stations_url = 'http://celestrak.com/NORAD/elements/{}'.format(cfg['celestrak_file'])
-        satellites = load.tle(stations_url, reload=should_reload)
-        
-        if should_reload:
-            should_reload = False
         
         if sat not in satellites:
             continue
@@ -79,6 +79,8 @@ def check(should_reload):
                 print(tweet)
             
             tweeted.append(sat)
+    
+    return False
 
 def main():
     s = sched.scheduler(time.time)
@@ -92,13 +94,13 @@ def main():
         
         try:
             iterations += 1
-            check(should_reload)
+            should_reload = check(should_reload)
             if iterations == int(cfg['minutes_to_predict']) + 1:
                 iterations = 0
                 tweeted = []
                 should_reload = True
         finally:
-            s.enter(60, 1, run_task, (should_reload))
+            s.enter(60, 1, run_task, (should_reload,))
     
     run_task(should_reload)
     
@@ -107,10 +109,11 @@ def main():
     except KeyboardInterrupt:
         print("Manual interrupt by user")
         return 10
-    except:
+    except Exception as e:
         now = datetime.datetime.now()
         now = now.strftime("%d/%m/%Y %H:%M:%S")
-        print("General Exception occured at {}".format(now))
+        print("General Exception occured at {}.".format(now))
+        print("Message: {}".format(e))
         return 10
 
     return 0
