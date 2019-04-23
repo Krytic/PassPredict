@@ -98,7 +98,7 @@ def main():
                 tweeted = []
                 should_reload = True
         finally:
-            s.enter(60, 1, run_task)
+            s.enter(60, 1, run_task, (should_reload))
     
     run_task(should_reload)
     
@@ -110,7 +110,7 @@ def main():
     except:
         now = datetime.datetime.now()
         now = now.strftime("%d/%m/%Y %H:%M:%S")
-        print("General Exception occured at {}".format(time.now()))
+        print("General Exception occured at {}".format(now))
         return 10
 
     return 0
