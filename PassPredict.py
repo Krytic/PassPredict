@@ -43,7 +43,14 @@ def check(should_reload):
         trange = ts.utc(now.year, now.month, now.day, now.hour, now.minute, now.second+secs)
         
         if sat not in satellites:
-            continue
+            # Sometimes the sheet and celestrak disagree with each other.
+            # in this instance, replace 'A (B)' with 'B (A)' and try again.
+            # if this still fails, ignore the satellite.
+            sat_parts = sat.split()
+            new_sat = "{} ({})".format(sat_parts[1:len(sat_parts[1])-1], sat_parts[0])
+            if new_sat not in satellites:
+                continue
+            sat = new_sat
         
         satellite = satellites[sat]
         
