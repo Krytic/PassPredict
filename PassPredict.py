@@ -121,7 +121,7 @@ def main():
         print("Message: {}".format(e))
         api = utils.twitter_api()
         cfg = utils.load_config()
-        api.PostDirectMessage("I went down! {}".format(e), user_id=None, screen_name=cfg['twitter']['user'])
+        api.PostDirectMessage("I went down! {}".format(e), user_id=None, screen_name=cfg['twitter_meta']['user'])
         return 10
 
     return 0
