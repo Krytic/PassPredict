@@ -103,6 +103,7 @@ def main():
         try:
             iterations += 1
             should_reload = check(should_reload)
+            cfg = utils.load_config()
             if iterations == int(cfg['minutes_to_predict']) + 1:
                 iterations = 0
                 tweeted = []
