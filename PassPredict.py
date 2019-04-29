@@ -45,11 +45,14 @@ def check(should_reload):
             # Sometimes the sheet and celestrak disagree with each other.
             # in this instance, replace 'A (B)' with 'B (A)' and try again.
             # if this still fails, ignore the satellite.
-            sat_parts = sat.split()
-            new_sat = "{} ({})".format(sat_parts[1:len(sat_parts[1])-1], sat_parts[0])
-            if new_sat not in satellites:
+            if "(" in sat:
+                sat_parts = sat.split()
+                new_sat = "{} ({})".format(sat_parts[1:len(sat_parts[1])-1], sat_parts[0])
+                if new_sat not in satellites:
+                    continue
+                sat = new_sat
+            else:
                 continue
-            sat = new_sat
         
         satellite = satellites[sat]
         
