@@ -12,6 +12,7 @@ PassPredict requires the following libraries:
 - pytz
 
 To install, download a fork into your folder. Create a file called `config.txt` with the following contents. You may use # at the BEGINNING of a line as a comment, and empty lines are ignored.
+
     #####################################
     ## Pass Predict Configuration File ##
     #####################################
