@@ -28,22 +28,29 @@ def memoize(func):
 @memoize
 def load_config():
     cfg = dict()
-    cfg['twitter'] = dict()
 
     with open('config.txt', 'r') as f:
         lines = f.readlines()
         for line in lines:
             if line[0] == "#" or line.strip() == "":
                 continue
+            
             bits = line.split('=')
+
+            if "#" in bits[1]:
+                bits[1] = bits[1].split("#")[0]
 
             value = bits[1].strip()
 
             if value in ['True', 'False']:
                 value = bool(value)
 
-            if bits[0][:3] == "tw:":
-                cfg['twitter'][bits[0][3:]] = value
+            if ":" in bits[0]:
+                namespace, option = bits.split(':')
+                if namespace not in cfg.keys():
+                    cfg[namespace] = dict()
+
+                cfg[namespace][option] = value
             else:
                 cfg[bits[0]] = value
 
@@ -53,7 +60,6 @@ def format_on_sign(value, value_if_positive, value_if_negative):
     value = float(value)
     return str(np.abs(value)) + ' {}'.format(value_if_positive) if value > 0 else str(np.abs(value)) + ' {}'.format(value_if_negative)
     
-
 
 def fetch_tracked_satellites():
     cfg = load_config()
@@ -73,7 +79,9 @@ def twitter_api():
     cfg = load_config()
     api = twitter.Api(**cfg['twitter'])
     if not api.VerifyCredentials():
-        raise ValidationError('Incorrect twitter credentials!')
+        raise ValidationError('Incorrect twitter credentials! \
+                              Confirm that all 4 options in the twitter \
+                              namespace in config.txt are correctly set.')
 
     return api
 
@@ -93,10 +101,11 @@ def worksheet():
     client = gspread.authorize(creds)
 
     try:
-        ws = client.open_by_key(cfg['sheet_id']).worksheet(cfg['sheet_name'])
+        client.login()
+        ws = client.open_by_key(cfg['sheet']['id']).worksheet(cfg['sheet']['name'])
     except WorksheetNotFound:
         raise ValidationError("Incorrect sheet details. \
-                              Confirm that sheet_name and sheet_id are \
+                              Confirm that sheet:name and sheet:id are \
                               correctly set in config.txt")
 
     return ws
@@ -112,7 +121,7 @@ def construct_image(sat, path, gs, sat_name, times):
             label.set_visible(False)
     
     az, el = compute_azel(sat, gs, times)
-    local_time = timezone(cfg['gs_tz'])
+    local_time = timezone(cfg['gs']['tz'])
     
     ax2 = ax.twinx()
     plt.ylim(0, 90)
@@ -128,8 +137,8 @@ def construct_image(sat, path, gs, sat_name, times):
     
     plt.subplot(122)
     map = Basemap(projection="ortho",
-                  lat_0=cfg['gs_lat'],
-                  lon_0=cfg['gs_long'],
+                  lat_0=cfg['gs']['lat'],
+                  lon_0=cfg['gs']['long'],
                   resolution='l')
     
     # draw lat/lon grid lines every 30 degrees.
@@ -167,7 +176,7 @@ def compute_azel(satellite, ground_station, trange):
 def compute_maximum_elevation(satellite, ground_station, trange):
     cfg = load_config()
 
-    local_time = timezone(cfg['gs_tz'])
+    local_time = timezone(cfg['gs']['tz'])
     maximum_elevation = (0, '')
     for tp in trange:
         diff = satellite - ground_station

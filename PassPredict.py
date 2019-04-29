@@ -9,7 +9,6 @@ try:
     cfg = utils.load_config()
     api = utils.twitter_api()
     ws = utils.worksheet()
-    
 except utils.ValidationError as e:
     print(e)
     sys.exit(1)
@@ -120,6 +119,9 @@ def main():
         now = now.strftime("%d/%m/%Y %H:%M:%S")
         print("General Exception occured at {}.".format(now))
         print("Message: {}".format(e))
+        api = utils.twitter_api()
+        cfg = utils.load_config()
+        api.PostDirectMessage("I went down! {}".format(e), user_id=None, screen_name=cfg['twitter']['user'])
         return 10
 
     return 0
