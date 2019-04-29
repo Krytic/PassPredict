@@ -56,8 +56,8 @@ def check(should_reload):
         
         satellite = satellites[sat]
         
-        latitude = utils.format_on_sign(cfg['gs_lat'], 'N', 'S')
-        longitude = utils.format_on_sign(cfg['gs_long'], 'E', 'W')
+        latitude = utils.format_on_sign(cfg['gs']['lat'], 'N', 'S')
+        longitude = utils.format_on_sign(cfg['gs']['long'], 'E', 'W')
         
         ground_station = Topos(latitude, longitude)
         difference = satellite - ground_station
