@@ -46,7 +46,7 @@ def load_config():
                 value = bool(value)
 
             if ":" in bits[0]:
-                namespace, option = bits.split(':')
+                namespace, option = bits[0].split(':')
                 if namespace not in cfg.keys():
                     cfg[namespace] = dict()
 
