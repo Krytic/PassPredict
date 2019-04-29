@@ -12,28 +12,41 @@ PassPredict requires the following libraries:
 - pytz
 
 To install, download a fork into your folder. Create a file called `config.txt` with the following contents. You may use # at the BEGINNING of a line as a comment, and empty lines are ignored.
-
-    tw:consumer_key=<CONSUMER_KEY>
-    tw:consumer_secret=<CONSUMER_SECRET>
-    tw:access_token_key=<TOKEN>
-    tw:access_token_secret=<SECRET_KEY>
-
-You will also need a `client_secret.json` file from the Google APIs spreadsheet. Any sheet is permissable via the following settings in `config.txt`:
-
-    sheet_id=<SHEET_ID>
-    sheet_name=<SHEET_NAME>
+    #####################################
+    ## Pass Predict Configuration File ##
+    #####################################
     
-You must configure your ground station also (PassPredict assumes +/+ lat/long for N/E, and -/- for S/W):
-
-    gs_lat=<LATITUDE>
-    gs_long=<LONGITUDE>
-    gs_tz=<TIMEZONE_STRING>
+    ## Twitter Configuration ##
+    twitter:consumer_key=<CONSUMER KEY>                                             # Consumer Key
+    twitter:consumer_secret=<CONSUMER SECRET>                                       # Consumer Secret
+    twitter:access_token_key=<TOKEN KEY>                                            # Access Token Key
+    twitter:access_token_secret=<TOKEN SECRET>                                      # Access Token Secret
+    twitter_meta:user=<TWITTER USERNAME>                                            # User to DM if bot goes down
+    
+    ## Ground Station Information ##
+    gs:lat=<LAT>                                                                    # Latitude of the Ground Station
+    gs:long=<LONG>                                                                  # Longitude of the Ground Station
+    gs:tz=Pacific/Auckland                                                          # pytz-compatible timezone of the Ground Station
+    
+    ## Google Sheet Information ##
+    sheet:id=<SHEET ID>                                                             # Sheet ID of the satellite list
+    sheet:name=<SHEET NAME>                                                         # Worksheet Name of the satellite list
+    
+    ## Running Options ##
+    run_mode=normal                                                                 # Whether to run the bot in normal (from file) mode or dynamic (from sheet) mode
+    silent=True                                                                     # True: Does not tweet. False: Tweets
+    minutes_to_predict=15                                                           # How far ahead the bot should predict
+    elevation_threshold=0                                                           # How far above the horizon (degs) a pass should be to be considered tweet-worthy
+    tweet=In {} minutes, {} will be over UoA! Maximum elevation is {:.2f}° at {}.   # The content of the tweet.
+    
+    ## Celestrak Information ##
+    celestrak_file=active.txt                                                       # The celestrak filename of the TLE files.
 
 To run, invoke it from the command line:
 
-    python PassPredict.py [mode] [silent]
-    
-Where `mode` is either `dynamic` (loads from google sheet) or `normal` (loads from file), and `silent` is either `silent` (does not tweet) or `speak` (tweets). If you wish to specify one option, you must specify both.
+    nohup python PassPredict.py & 
+
+(This runs it as a background process, use `ps aux | grep PassPredict` to monitor it)
 
 PassPredict will test your credentials and refuse to run if they are correct. By default PassPredict runs every 60 seconds (customisable, although is hardcoded in).
 
