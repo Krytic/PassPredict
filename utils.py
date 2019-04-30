@@ -85,11 +85,8 @@ def twitter_api():
 
     return api
 
-
 @memoize
-def worksheet():
-    cfg = load_config()
-
+def get_google_client():
     # API recently changed, not sure which scope is required
     scope = ['https://spreadsheets.google.com/feeds',
              'https://www.googleapis.com/auth/drive']
@@ -99,7 +96,13 @@ def worksheet():
             scope
             )
     client = gspread.authorize(creds)
+    
+    return client
 
+def worksheet():
+    cfg = load_config()
+
+    client = get_google_client()
     try:
         client.login()
         ws = client.open_by_key(cfg['sheet']['id']).worksheet(cfg['sheet']['name'])
@@ -110,6 +113,36 @@ def worksheet():
 
     return ws
 
+def logsheet():
+    cfg = load_config()
+    
+    client = get_google_client()
+    
+    try:
+        client.login()
+        ws = client.open_by_key(cfg['sheet']['id']).worksheet(cfg['sheet']['logsheet_name'])
+    except WorksheetNotFound:
+        raise ValidationError("Incorrect sheet details. \
+                              Confirm that sheet:name and sheet:id are \
+                              correctly set in config.txt")
+
+    return ws
+
+def log_data(ts, sat, tweet):
+    sheet = logsheet()
+    
+    user = tweet.user.name
+    tweet_id = tweet.id
+    
+    tweet_link = "=HYPERLINK(https://twitter.com/{user}/status/{tweet_id}, 'Tweet Link')".format(user=user, tweet_id=tweet_id)
+    
+    data = [ts, sat, tweet_link]
+    try:
+        sheet.append_row(data, value_input_option='USER_ENTERED')
+    except Exception as e:
+        raise e
+    else:
+        return True
 
 def construct_image(sat, path, gs, sat_name, times):
     cfg = load_config()

@@ -75,16 +75,19 @@ def check(should_reload):
             plot = utils.construct_image(satellite, path, ground_station, sat, times)
             plot.savefig('figs/{}.png'.format(sat))
             
-            plot.show()
+            if cfg['debug']:
+                plot.show()
             
             tweet = cfg['tweet'].format(cfg['minutes_to_predict'], sat, *el)
             image = open('figs/{}.png'.format(sat), 'rb')
             
             if not cfg['silent']:
-                api.PostUpdate(tweet, media=image)
+                status = api.PostUpdate(tweet, media=image)
+                utils.log_data(datetime.datetime.now(), sat, status)
                 print("Tweeted about {}".format(sat))
             else:
-                print(tweet)
+                if cfg['debug']:
+                    print(tweet)
             
             tweeted.append(sat)
     

@@ -33,6 +33,7 @@ To install, download a fork into your folder. Create a file called `config.txt` 
     ## Google Sheet Information ##
     sheet:id=<SHEET ID>                                                             # Sheet ID of the satellite list
     sheet:name=<SHEET NAME>                                                         # Worksheet Name of the satellite list
+    sheet:logsheet_name=<SHEET NAME>                                                # Worksheet Name of the tracking log
     
     ## Running Options ##
     run_mode=normal                                                                 # Whether to run the bot in normal (from file) mode or dynamic (from sheet) mode
@@ -43,6 +44,9 @@ To install, download a fork into your folder. Create a file called `config.txt` 
     
     ## Celestrak Information ##
     celestrak_file=active.txt                                                       # The celestrak filename of the TLE files.
+    
+    ## Run in debug mode? ##
+    debug=True
 
 To run, invoke it from the command line:
 
