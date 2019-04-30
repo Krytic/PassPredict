@@ -1,6 +1,8 @@
 # PassPredict
 
-Intelligent twitter bot to track and identify satellites that are passing overhead. Follow it on twitter at [@passpredict](http://twitter.com/passpredict)
+PassPredict is an essential tool for any ground station. It is a fully autonomous twitter bot that monitors the skies for any satellites you are interested in, and sends you a twitter notification when it's about to happen.
+
+Follow the University of Auckland's instance of PassPredict on twitter at [@passpredict](http://twitter.com/passpredict).
 
 ## Installation and dependencies
 PassPredict requires the following libraries:
@@ -17,6 +19,11 @@ To install, download a fork into your folder. Create a file called `config.txt` 
     #####################################
     ## Pass Predict Configuration File ##
     #####################################
+    # hash sign is a comment
+    # empty lines ignored
+    # namespace options by using a colon
+    # treat strings as python-compatible (ie {} is allowed)
+    # lat/long assumes +ve values mean N/E, -ve means S/W
     
     ## Twitter Configuration ##
     twitter:consumer_key=<CONSUMER KEY>                                             # Consumer Key
@@ -52,7 +59,7 @@ To run, invoke it from the command line:
 
     nohup python PassPredict.py & 
 
-(This runs it as a background process, use `ps aux | grep PassPredict` to monitor it)
+(This runs it as a background process, use `ps aux | grep PassPredict` to monitor it, and use `vim nohup.out` to view stdout)
 
 PassPredict will test your credentials and refuse to run if they are correct. By default PassPredict runs every 60 seconds (customisable, although is hardcoded in).
 
