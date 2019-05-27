@@ -51,6 +51,8 @@ def check(should_reload):
                 if new_sat not in satellites:
                     continue
                 sat = new_sat
+            elif sat == "ISS":
+                sat = "ISS (ZARYA)"
             else:
                 continue
         
@@ -120,6 +122,9 @@ def main():
         s.run()
     except KeyboardInterrupt:
         print("Manual interrupt by user")
+        api = utils.twitter_api()
+        cfg = utils.load_config()
+        api.PostDirectMessage("Bot taken offline by user interrupt.", user_id=None, screen_name=cfg['twitter_meta']['user'])
         return 10
     except Exception as e:
         now = datetime.datetime.now()

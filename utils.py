@@ -134,7 +134,7 @@ def log_data(ts, sat, tweet):
     user = tweet.user.name
     tweet_id = tweet.id
     
-    tweet_link = "=HYPERLINK(https://twitter.com/{user}/status/{tweet_id}, 'Tweet Link')".format(user=user, tweet_id=tweet_id)
+    tweet_link = "=HYPERLINK('https://twitter.com/{user}/status/{tweet_id}', 'https://twitter.com/{user}/status/{tweet_id}')".format(user=user, tweet_id=tweet_id)
     
     data = [ts, sat, tweet_link]
     try:
