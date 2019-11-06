@@ -72,12 +72,14 @@ def connect_twitter():
 
     return api
 
-def tweet(msg, media):
+def tweet(apiHandler, msg, media):
     """
     Post a tweet.
 
     Parameters
     ----------
+    apiHandler : twitter.api.Api
+        An instance of the Twitter API.
     tweet : string
         The tweet to send.
     media : file
@@ -88,8 +90,7 @@ def tweet(msg, media):
     None.
 
     """
-    global api
-    api.PostUpdate(msg, media=media)
+    apiHandler.PostUpdate(msg, media=media)
 
 tracking = ["ISS (ZARYA)"]
 checked = dict()
@@ -161,7 +162,7 @@ def main_loop(sc):
 
             AOS_nzt = AOS_utc.to("Pacific/Auckland").format("HH:mm:ss")
             max_el = predicted_pass.max_elevation_deg
-            tweet(f"There's a pass of {sat} over UoA, with maximum elevation {max_el:.2f}°, commencing at {AOS_nzt}.", media=img)
+            tweet(api, f"There's a pass of {sat} over UoA, with maximum elevation {max_el:.2f}°, commencing at {AOS_nzt}.", img)
             print(f"Tweeted about {sat}")
 
             checked[sat] = AOS_utc
