@@ -1,13 +1,15 @@
 # Pass-Predict Specific
-config.txt
 *.dat
 *.data
 *.preds
 *.bsp
-figs/
+data/
+images/
+tles/
 active.txt
 client_secret.json
 nohup.out
+config.ini
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

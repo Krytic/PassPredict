@@ -1,141 +1,170 @@
-from skyfield.api import Topos, load, utc
-import datetime
-import numpy as np
 import sched, time
-import sys
-import utils
+import twitter
+import arrow
+import requests
+import os, random
+from orbit_predictor.sources import EtcTLESource
+from orbit_predictor.locations import NZ2
+from orbit_predictor.predictors.base import Position
+import configparser
+import cartopy.crs as ccrs
+import matplotlib.pyplot as plt
 
-try:
-    cfg = utils.load_config()
-    api = utils.twitter_api()
-    ws = utils.worksheet()
-except utils.ValidationError as e:
-    print(e)
-    sys.exit(1)
+s = sched.scheduler(time.time, time.sleep)
 
-tweeted = []
+plt.ioff()
+plt.rcParams["font.family"] = "serif"
 
-def check(should_reload):
-    sats = utils.fetch_tracked_satellites()
-        
-    stations_url = 'http://celestrak.com/NORAD/elements/{}'.format(cfg['celestrak_file'])
-    satellites = load.tle(stations_url, reload=should_reload)
-        
-    if should_reload:
-        should_reload = False
+config = configparser.ConfigParser()
+config.read("config.ini")
 
-    for i in range(len(sats)):
-        ts = load.timescale()
-        now = datetime.datetime.utcnow()
-        mtime = now + datetime.timedelta(minutes=int(cfg['minutes_to_predict']))
-        
-        times = []
-        for s in range(0, 60*int(cfg['minutes_to_predict'])):
-            dtime = now + datetime.timedelta(seconds=int(s))
-            times.append(ts.utc(dtime.replace(tzinfo=utc)))
-        
-        sat = sats[i].strip().upper()
-        t = ts.utc(mtime.replace(tzinfo=utc))
-        
-        secs = np.arange(1, 60*(int(cfg['minutes_to_predict'])+15))
-        
-        trange = ts.utc(now.year, now.month, now.day, now.hour, now.minute, now.second+secs)
-        
-        if sat not in satellites:
-            # Sometimes the sheet and celestrak disagree with each other.
-            # in this instance, replace 'A (B)' with 'B (A)' and try again.
-            # if this still fails, ignore the satellite.
-            if "(" in sat:
-                sat_parts = sat.split()
-                new_sat = "{} ({})".format(sat_parts[1:len(sat_parts[1])-1], sat_parts[0])
-                if new_sat not in satellites:
-                    continue
-                sat = new_sat
-            elif sat == "ISS":
-                sat = "ISS (ZARYA)"
-            else:
-                continue
-        
-        satellite = satellites[sat]
-        
-        latitude = utils.format_on_sign(cfg['gs']['lat'], 'N', 'S')
-        longitude = utils.format_on_sign(cfg['gs']['long'], 'E', 'W')
-        
-        ground_station = Topos(latitude, longitude)
-        difference = satellite - ground_station
-        
-        topocentric = difference.at(t)
-        
-        alt, az, distance = topocentric.altaz()
-    
-        if alt.degrees >= int(cfg['elevation_threshold']) and sat not in tweeted:
-            el = utils.compute_maximum_elevation(satellite, ground_station, trange)
+def download_TLEs():
+    """
+    Download the TLE files from celestrak.
 
-            pos = satellite.at(trange)
-            path = pos.subpoint()
+    Returns
+    -------
+    None.
 
-            plot = utils.construct_image(satellite, path, ground_station, sat, times)
-            plot.savefig('figs/{}.png'.format(sat))
-            
-            if cfg['debug']:
-                plot.show()
-            
-            tweet = cfg['tweet'].format(cfg['minutes_to_predict'], sat, *el)
-            image = open('figs/{}.png'.format(sat), 'rb')
-            
-            if not cfg['silent']:
-                status = api.PostUpdate(tweet, media=image)
-                utils.log_data(datetime.datetime.now(), sat, status)
-                print("Tweeted about {}".format(sat))
-            else:
-                if cfg['debug']:
-                    print(tweet)
-            
-            tweeted.append(sat)
-    
-    return False
+    """
+    url = "http://celestrak.com/NORAD/elements/active.txt"
 
-def main():
-    s = sched.scheduler(time.time)
-    
-    iterations = 0
-    should_reload = True
-    
-    def run_task(should_reload):
-        nonlocal iterations
-        global tweeted
-        
-        try:
-            iterations += 1
-            should_reload = check(should_reload)
-            cfg = utils.load_config()
-            if iterations == int(cfg['minutes_to_predict']) + 1:
-                iterations = 0
-                tweeted = []
-                should_reload = True
-        finally:
-            s.enter(60, 1, run_task, (should_reload,))
-    
-    run_task(should_reload)
-    
-    try:
-        s.run()
-    except KeyboardInterrupt:
-        print("Manual interrupt by user")
-        api = utils.twitter_api()
-        cfg = utils.load_config()
-        api.PostDirectMessage("Bot taken offline by user interrupt.", user_id=None, screen_name=cfg['twitter_meta']['user'])
-        return 10
-    except Exception as e:
-        now = datetime.datetime.now()
-        now = now.strftime("%d/%m/%Y %H:%M:%S")
-        print("General Exception occured at {}.".format(now))
-        print("Message: {}".format(e))
-        api = utils.twitter_api()
-        cfg = utils.load_config()
-        api.PostDirectMessage("I went down! {}".format(e), user_id=None, screen_name=cfg['twitter_meta']['user'])
-        return 10
+    r = requests.get(url)
 
-    return 0
+    lines = r.text.split("\r\n")
 
-main()
+    for i in range(0, len(lines)-3, 3):
+        satname = lines[i].strip()
+
+        invalid_chars = ["\\", "/", ":", "*", "?", '"', "<", ">", "|"]
+
+        fname = satname
+        for char in invalid_chars:
+            fname = fname.replace(char, "")
+        line1 = satname + "\n"
+        line2 = lines[i+1].strip() + "\n"
+        line3 = lines[i+2].strip()
+        with open(f"tles/{fname}.tle", "w") as f:
+            f.writelines([line1, line2, line3])
+
+def connect_twitter():
+    """
+    Generate a connection to the twitter API.
+
+    Raises
+    ------
+    Exception
+        If the validation with twitter failed.
+        Typically this is due to an incorrect consumer key, etc.
+
+    Returns
+    -------
+    api : twitter.api.Api
+        An instance of the twitter API.
+
+    """
+    global config
+
+    api = twitter.Api(**config['twitter'])
+
+    if not api.VerifyCredentials():
+        raise Exception("Twitter Validation Failed.")
+
+    return api
+
+def tweet(msg, media):
+    """
+    Post a tweet.
+
+    Parameters
+    ----------
+    tweet : string
+        The tweet to send.
+    media : file
+        A file pointer to an image to attach.
+
+    Returns
+    -------
+    None.
+
+    """
+    global api
+    api.PostUpdate(msg, media=media)
+
+tracking = ["ISS (ZARYA)"]
+checked = dict()
+
+def main_loop(sc):
+    """
+    The main loop of PassPredict.
+
+    Parameters
+    ----------
+    sc : sched
+        An instance of the sched class.
+
+    Returns
+    -------
+    None.
+
+    """
+    api = connect_twitter()
+
+    fname = random.choice(os.listdir("tles/"))
+
+    if time.time() - os.path.getmtime(f"tles/{fname}") > 604800: # 1 week
+        download_TLEs()
+
+    now = arrow.utcnow()
+
+    for sat in tracking:
+        source = EtcTLESource(filename=f"tles/{sat}.tle")
+        predictor = source.get_predictor(sat)
+        predicted_pass = predictor.get_next_pass(NZ2)
+
+        if sat in checked.keys():
+            if now > checked[sat]:
+                # AOS already occured, can safely remove the sat from the list
+                checked.pop(sat)
+            continue
+
+        AOS_utc = arrow.get(predicted_pass.aos)
+
+        if AOS_utc <= now.shift(minutes=120):
+            LOS_utc = arrow.get(predicted_pass.los)
+
+            plt.figure()
+            lat, long = NZ2.position_llh[0], NZ2.position_llh[1]
+            ax = plt.axes(projection=ccrs.NearsidePerspective(central_longitude=long, central_latitude=lat, satellite_height=35785831/3))
+
+            ax.stock_img()
+
+            AOS_for_image = AOS_utc.to("Pacific/Auckland").format("DD/MM/YYYY, HH:mm:ss")
+
+            x = []
+            y = []
+
+            for t in arrow.Arrow.range('second', AOS_utc, LOS_utc):
+                pos = predictor.get_position(t)
+                lat = pos.position_llh[0]
+                long = pos.position_llh[1]
+
+                x.append(long)
+                y.append(lat)
+
+            plt.plot(x, y, 'r-', transform=ccrs.Geodetic())
+
+            plt.title(f"Pass of {sat} on {AOS_for_image}")
+            plt.savefig(f"images/{sat}.png", dpi=500)
+
+            AOS_nzt = AOS_utc.to("Pacific/Auckland").format("HH:mm:ss")
+            max_el = predicted_pass.max_elevation_deg
+            # api.PostUpdate(f"There's a pass of {sat} over UoA, with maximum elevation {max_el:.2f}°, commencing at {AOS_nzt}.")
+            print(f"Tweeted about {sat}")
+
+            checked[sat] = AOS_utc
+
+    s.enter(10, 1, main_loop, (sc,))
+
+s.enter(1, 1, main_loop, (s,))
+s.run()

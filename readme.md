@@ -6,58 +6,18 @@ Follow the University of Auckland's instance of PassPredict on twitter at [@pass
 
 ## Installation and dependencies
 PassPredict requires the following libraries:
-- Anaconda (Numpy, Matplotlib + Basemap, Scipy)
-- [Skyfield](https://rhodesmill.org/skyfield)
-- [Python-Twitter](https://github.com/bear/python-twitter)
-- gspread
-- oauth2client
-- pytz
+- Anaconda (Numpy, Matplotlib)
+- orbit_predictor
+- cartopy
+- twitter
 
-To install, download a fork into your folder. Create a file called `config.txt` with the following contents. You may use # at the BEGINNING of a line as a comment, and empty lines are ignored.
+## Configuration and Operation
 
-
-    #####################################
-    ## Pass Predict Configuration File ##
-    #####################################
-    # hash sign is a comment
-    # empty lines ignored
-    # namespace options by using a colon
-    # treat strings as python-compatible (ie {} is allowed)
-    # lat/long assumes +ve values mean N/E, -ve means S/W
-    
-    ## Twitter Configuration ##
-    twitter:consumer_key=<CONSUMER KEY>                                             # Consumer Key
-    twitter:consumer_secret=<CONSUMER SECRET>                                       # Consumer Secret
-    twitter:access_token_key=<TOKEN KEY>                                            # Access Token Key
-    twitter:access_token_secret=<TOKEN SECRET>                                      # Access Token Secret
-    twitter_meta:user=<TWITTER USERNAME>                                            # User to DM if bot goes down
-    
-    ## Ground Station Information ##
-    gs:lat=<LAT>                                                                    # Latitude of the Ground Station
-    gs:long=<LONG>                                                                  # Longitude of the Ground Station
-    gs:tz=Pacific/Auckland                                                          # pytz-compatible timezone of the Ground Station
-    
-    ## Google Sheet Information ##
-    sheet:id=<SHEET ID>                                                             # Sheet ID of the satellite list
-    sheet:name=<SHEET NAME>                                                         # Worksheet Name of the satellite list
-    sheet:logsheet_name=<SHEET NAME>                                                # Worksheet Name of the tracking log
-    
-    ## Running Options ##
-    run_mode=normal                                                                 # Whether to run the bot in normal (from file) mode or dynamic (from sheet) mode
-    silent=True                                                                     # True: Does not tweet. False: Tweets
-    minutes_to_predict=15                                                           # How far ahead the bot should predict
-    elevation_threshold=0                                                           # How far above the horizon (degs) a pass should be to be considered tweet-worthy
-    tweet=In {} minutes, {} will be over UoA! Maximum elevation is {:.2f}° at {}.   # The content of the tweet.
-    
-    ## Celestrak Information ##
-    celestrak_file=active.txt                                                       # The celestrak filename of the TLE files.
-    
-    ## Run in debug mode? ##
-    debug=True
+Default configuration is stored in `config.default.ini`. Edit this, and rename it to `config.ini` before the first run.
 
 To run, invoke it from the command line:
 
-    nohup python PassPredict.py & 
+    nohup python PassPredict.py &
 
 (This runs it as a background process, use `ps aux | grep PassPredict` to monitor it, and use `vim nohup.out` to view stdout)
 
