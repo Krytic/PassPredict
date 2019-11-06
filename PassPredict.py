@@ -157,9 +157,11 @@ def main_loop(sc):
             plt.title(f"Pass of {sat} on {AOS_for_image}")
             plt.savefig(f"images/{sat}.png", dpi=500)
 
+            img = open(f"images/{sat}.png", 'rb')
+
             AOS_nzt = AOS_utc.to("Pacific/Auckland").format("HH:mm:ss")
             max_el = predicted_pass.max_elevation_deg
-            # api.PostUpdate(f"There's a pass of {sat} over UoA, with maximum elevation {max_el:.2f}°, commencing at {AOS_nzt}.")
+            tweet(f"There's a pass of {sat} over UoA, with maximum elevation {max_el:.2f}°, commencing at {AOS_nzt}.", media=img)
             print(f"Tweeted about {sat}")
 
             checked[sat] = AOS_utc
