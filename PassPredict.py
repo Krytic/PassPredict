@@ -104,7 +104,7 @@ def tweet(apiHandler, msg, media):
     None.
 
     """
-    return
+
     apiHandler.PostUpdate(msg, media=media)
 
 checked = dict()
