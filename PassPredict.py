@@ -18,6 +18,20 @@ plt.rcParams["font.family"] = "serif"
 config = configparser.ConfigParser()
 config.read("config.ini")
 
+def get_tracked_satellites():
+    url = config['tracking']['update_url']
+
+    r = requests.get(url)
+
+    sats = []
+
+    for line in r.text.split("\n"):
+        line = line.strip()
+        if line != '':
+            sats.append(line)
+
+    return sats
+
 def download_TLEs():
     """
     Download the TLE files from celestrak.
@@ -65,7 +79,7 @@ def connect_twitter():
     """
     global config
 
-    api = twitter.Api(**config['twitter'])
+    api = twitter.Api(**config['twitter_api'])
 
     if not api.VerifyCredentials():
         raise Exception("Twitter Validation Failed.")
@@ -90,9 +104,9 @@ def tweet(apiHandler, msg, media):
     None.
 
     """
+    return
     apiHandler.PostUpdate(msg, media=media)
 
-tracking = ["ISS (ZARYA)"]
 checked = dict()
 
 def main_loop(sc):
@@ -109,6 +123,7 @@ def main_loop(sc):
     None.
 
     """
+    tracking = get_tracked_satellites()
     api = connect_twitter()
 
     fname = random.choice(os.listdir("tles/"))
@@ -167,7 +182,7 @@ def main_loop(sc):
 
             checked[sat] = AOS_utc
 
-    s.enter(10, 1, main_loop, (sc,))
+    s.enter(config['twitter']['time_between_checks'], 1, main_loop, (sc,))
 
 s.enter(1, 1, main_loop, (s,))
 s.run()
