@@ -1,4 +1,4 @@
-import sched, time
+import time
 import twitter
 import arrow
 import requests
@@ -9,8 +9,9 @@ from orbit_predictor.predictors.base import Position
 import configparser
 import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
+from apscheduler.schedulers.blocking import BlockingScheduler
 
-s = sched.scheduler(time.time, time.sleep)
+sched = BlockingScheduler()
 
 plt.ioff()
 plt.rcParams["font.family"] = "serif"
@@ -109,6 +110,7 @@ def tweet(apiHandler, msg, media):
 
 checked = dict()
 
+@sched.add_job('interval', minutes=int(config['tracking']['time_between_checks']))
 def main_loop(sc):
     """
     The main loop of PassPredict.
@@ -181,8 +183,5 @@ def main_loop(sc):
             print(f"Tweeted about {sat}")
 
             checked[sat] = AOS_utc
-
-    s.enter(config['twitter']['time_between_checks'], 1, main_loop, (sc,))
-
-s.enter(1, 1, main_loop, (s,))
-s.run()
+            
+sched.start()
