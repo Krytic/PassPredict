@@ -110,15 +110,14 @@ def tweet(apiHandler, msg, media):
 
 checked = dict()
 
-@sched.add_job('interval', minutes=int(config['tracking']['time_between_checks']))
-def main_loop(sc):
+@sched.scheduled_job('interval', minutes=int(config['tracking']['time_between_checks']))
+def main_loop():
     """
     The main loop of PassPredict.
 
     Parameters
     ----------
-    sc : sched
-        An instance of the sched class.
+    None.
 
     Returns
     -------
@@ -183,5 +182,5 @@ def main_loop(sc):
             print(f"Tweeted about {sat}")
 
             checked[sat] = AOS_utc
-            
+
 sched.start()
